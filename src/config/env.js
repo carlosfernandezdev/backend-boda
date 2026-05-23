@@ -21,12 +21,8 @@ export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT || '3000', 10),
 
-  // Database
-  DB_HOST: required('DB_HOST'),
-  DB_PORT: parseInt(process.env.DB_PORT || '5432', 10),
-  DB_NAME: required('DB_NAME'),
-  DB_USER: required('DB_USER'),
-  DB_PASSWORD: required('DB_PASSWORD'),
+  // Database (Neon) — connection string completo, incluye host/puerto/usuario/ssl
+  DATABASE_URL: required('DATABASE_URL'),
 
   // JWT
   JWT_SECRET: required('JWT_SECRET'),
