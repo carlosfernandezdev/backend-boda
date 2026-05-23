@@ -62,7 +62,7 @@ export const R2Service = {
 
     return {
       key,
-      url: R2_PUBLIC_URL + key,
+      url: `${R2_PUBLIC_URL.replace(/\/$/, '')}/${key}`,
     };
   },
 

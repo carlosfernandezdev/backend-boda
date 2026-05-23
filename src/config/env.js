@@ -1,4 +1,13 @@
-import 'dotenv/config';
+import { config } from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+// Cargamos el .env desde la raíz del backend usando una ruta absoluta
+// relativa a ESTE archivo (src/config/env.js → ../../.env).
+// Así funciona sin importar desde qué directorio se ejecute node
+// (raíz, scripts/, etc.), no depende de process.cwd().
+const __dirname = dirname(fileURLToPath(import.meta.url));
+config({ path: join(__dirname, '..', '..', '.env') });
 
 const required = (name) => {
   const value = process.env[name];
