@@ -8,12 +8,13 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ValidationError } from '../utils/errors.js';
 import { toArchivoPublico } from '../models/Archivo.js';
 
+// Los archivos usan UUID como id (no enteros). Validamos formato UUID.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const parseId = (raw) => {
-  const id = Number(raw);
-  if (!Number.isInteger(id) || id < 1) {
-    throw new ValidationError('El id debe ser un entero positivo');
+  if (typeof raw !== 'string' || !UUID_RE.test(raw)) {
+    throw new ValidationError('El id de archivo debe ser un UUID válido');
   }
-  return id;
+  return raw;
 };
 
 export const archivoController = {
