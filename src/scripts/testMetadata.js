@@ -13,7 +13,7 @@
 import { readFile } from 'node:fs/promises';
 import { extname, basename } from 'node:path';
 
-import { MetadataService } from '../src/services/metadataService.js';
+import { MetadataService } from '../services/metadataService.js';
 
 const EXT_IMAGEN = new Set(['.jpg', '.jpeg', '.png', '.heic', '.heif', '.webp', '.tiff', '.tif']);
 const EXT_VIDEO = new Set(['.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v']);

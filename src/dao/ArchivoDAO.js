@@ -5,7 +5,8 @@ import { query } from '../config/db.js';
  */
 const SELECT_ARCHIVO = `
   SELECT a.id, a.nombre, a.usuario_id, a.etapa_id, a.tipo,
-         a.url, a.r2_key, a.tamano_bytes, a.mime_type, a.visible,
+         a.url, a.r2_key, a.thumbnail_url, a.thumbnail_r2_key,
+         a.tamano_bytes, a.mime_type, a.visible,
          a.tomada_en, a.metadata, a.created_at, a.updated_at,
          u.nombre AS usuario_nombre,
          e.nombre AS etapa_nombre
@@ -103,6 +104,8 @@ export const ArchivoDAO = {
     tipo,
     url,
     r2_key,
+    thumbnail_url,
+    thumbnail_r2_key,
     tamano_bytes,
     mime_type,
     tomada_en,
@@ -111,10 +114,12 @@ export const ArchivoDAO = {
     const { rows } = await query(
       `INSERT INTO archivos (
          nombre, usuario_id, etapa_id, tipo, url, r2_key,
+         thumbnail_url, thumbnail_r2_key,
          tamano_bytes, mime_type, tomada_en, metadata
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING id, nombre, usuario_id, etapa_id, tipo, url, r2_key,
+                 thumbnail_url, thumbnail_r2_key,
                  tamano_bytes, mime_type, visible, tomada_en, metadata,
                  created_at, updated_at`,
       [
@@ -124,6 +129,8 @@ export const ArchivoDAO = {
         tipo,
         url,
         r2_key,
+        thumbnail_url || null,
+        thumbnail_r2_key || null,
         tamano_bytes || null,
         mime_type || null,
         tomada_en || null,

@@ -1,6 +1,7 @@
 /**
  * Sanitiza un row de archivos para devolver al cliente.
- * Excluye la r2_key (es info interna; el cliente solo necesita la url pública).
+ * Excluye la r2_key y thumbnail_r2_key (info interna; el cliente solo
+ * necesita las urls públicas).
  */
 export const toArchivoPublico = (row) => {
   if (!row) return null;
@@ -13,6 +14,7 @@ export const toArchivoPublico = (row) => {
     etapa_nombre: row.etapa_nombre || undefined,
     tipo: row.tipo,
     url: row.url,
+    thumbnail_url: row.thumbnail_url || undefined,
     tamano_bytes: row.tamano_bytes,
     mime_type: row.mime_type,
     visible: row.visible,

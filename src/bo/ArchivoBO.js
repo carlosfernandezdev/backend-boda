@@ -2,6 +2,7 @@ import { ArchivoDAO } from '../dao/ArchivoDAO.js';
 import { EtapaDAO } from '../dao/EtapaDAO.js';
 import { R2Service } from '../services/r2Service.js';
 import { MetadataService } from '../services/metadataService.js';
+import { ThumbnailService } from '../services/thumbnailService.js';
 import {
   NotFoundError,
   ForbiddenError,
@@ -45,7 +46,8 @@ const puedeVer = (usuario, archivo) => {
 export const ArchivoBO = {
   /**
    * Sube un archivo: extrae metadata, asigna etapa, sube a R2, persiste en DB.
-   * Si la DB falla después de R2, intenta cleanup del objeto subido.
+   * Para videos, además genera un thumbnail (póster) y lo sube a R2.
+   * Si la DB falla después de R2, intenta cleanup de los objetos subidos.
    */
   async crear({ file, usuario, etapa_id_manual }) {
     if (!file || !file.buffer) {
@@ -75,7 +77,7 @@ export const ArchivoBO = {
       etapa_id = null;
     }
 
-    // 3. Subir a R2
+    // 3. Subir el archivo principal a R2
     const { key, url } = await R2Service.upload({
       buffer: file.buffer,
       tipo,
@@ -84,7 +86,33 @@ export const ArchivoBO = {
       fecha: tomada_en || new Date(),
     });
 
-    // 4. Persistir en DB. Si falla, limpiar R2.
+    // 3b. Si es video, generar y subir el thumbnail (póster).
+    //     Si la generación falla, seguimos sin póster (no rompe la subida).
+    let thumbnail_url = null;
+    let thumbnail_r2_key = null;
+    if (tipo === 'video') {
+      const thumbBuffer = await ThumbnailService.generar({
+        buffer: file.buffer,
+        mimeType: file.mimetype,
+      });
+      if (thumbBuffer) {
+        try {
+          const thumb = await R2Service.upload({
+            buffer: thumbBuffer,
+            tipo: 'imagen',
+            nombreOriginal: 'thumbnail.jpg',
+            mimeType: 'image/jpeg',
+            fecha: tomada_en || new Date(),
+          });
+          thumbnail_url = thumb.url;
+          thumbnail_r2_key = thumb.key;
+        } catch (err) {
+          console.error('No se pudo subir thumbnail a R2:', err.message);
+        }
+      }
+    }
+
+    // 4. Persistir en DB. Si falla, limpiar R2 (video + thumbnail).
     try {
       const archivo = await ArchivoDAO.crear({
         nombre: file.originalname,
@@ -93,6 +121,8 @@ export const ArchivoBO = {
         tipo,
         url,
         r2_key: key,
+        thumbnail_url,
+        thumbnail_r2_key,
         tamano_bytes: file.size,
         mime_type: file.mimetype,
         tomada_en,
@@ -103,6 +133,7 @@ export const ArchivoBO = {
       // Best-effort cleanup
       try {
         await R2Service.eliminar(key);
+        if (thumbnail_r2_key) await R2Service.eliminar(thumbnail_r2_key);
       } catch (cleanupErr) {
         console.error('Error en cleanup de R2 tras fallo DB:', cleanupErr.message);
       }
@@ -169,7 +200,7 @@ export const ArchivoBO = {
   },
 
   /**
-   * Elimina archivo: primero de R2, después de DB.
+   * Elimina archivo: primero de R2 (archivo + thumbnail), después de DB.
    * Si R2 falla, no tocamos DB (queda recuperable).
    */
   async eliminar(id, usuario) {
@@ -180,6 +211,14 @@ export const ArchivoBO = {
     }
 
     await R2Service.eliminar(archivo.r2_key);
+    if (archivo.thumbnail_r2_key) {
+      // El thumbnail es secundario: si falla su borrado, no frenamos el delete.
+      try {
+        await R2Service.eliminar(archivo.thumbnail_r2_key);
+      } catch (err) {
+        console.error('No se pudo borrar thumbnail de R2:', err.message);
+      }
+    }
     await ArchivoDAO.eliminar(id);
   },
 };
